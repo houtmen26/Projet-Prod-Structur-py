@@ -10,33 +10,33 @@ class Maturite :
         self.convention = convention
         self.maturite_en_annees = self.calculer_maturite()
 
-        def calculer_maturite(self) -> float:
-            """
-            Calcule la maturité en années selon la convention de jours.
+    def calculer_maturite(self) -> float:
+        """
+        Calcule la maturité en années selon la convention de jours.
 
-            :return: Maturité en années
-            """
-            jours = (self.mat_date - self.val_date).days
+        :return: Maturité en années
+        """
+        jours = (self.mat_date - self.val_date).days
 
-            if self.convention == "Act/365":
-                return jours / 365
-            elif self.convention == "Act/360":
-                return jours / 360
-            elif self.convention == "30/360":
-                return ((self.mat_date.year - self.val_date.year) * 360 +
-                        (self.mat_date.month - self.val_date.month) * 30 +
-                        (self.mat_date.day - self.val_date.day)) / 360
-            else:
-                raise ValueError("Convention de jours non reconnue. Utiliser 'Act/365', 'Act/360' ou '30/360'.")
+        if self.convention == "Act/365":
+            return jours / 365
+        elif self.convention == "Act/360":
+            return jours / 360
+        elif self.convention == "30/360":
+            return ((self.mat_date.year - self.val_date.year) * 360 +
+                    (self.mat_date.month - self.val_date.month) * 30 +
+                    (self.mat_date.day - self.val_date.day)) / 360
+        else:
+            raise ValueError("Convention de jours non reconnue. Utiliser 'Act/365', 'Act/360' ou '30/360'.")
 
-        def __str__(self):
-            """
-            Affiche les informations sur la maturité.
-            """
-            return (f"Maturité:\n"
-                    f" - Date de valorisation : {self.val_date.strftime('%Y-%m-%d')}\n"
-                    f" - Date de maturité : {self.mat_date.strftime('%Y-%m-%d')}\n"
-                    f" - Maturité en années : {self.maturite_en_annees:.4f} ({self.convention})")
+    def __str__(self):
+        """
+        Affiche les informations sur la maturité.
+        """
+        return (f"Maturité:\n"
+                f" - Date de valorisation : {self.val_date.strftime('%Y-%m-%d')}\n"
+                f" - Date de maturité : {self.mat_date.strftime('%Y-%m-%d')}\n"
+                f" - Maturité en années : {self.maturite_en_annees:.4f} ({self.convention})")
 
 
 class taux :
