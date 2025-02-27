@@ -21,9 +21,12 @@
 
 ##################### COURS NUMERO 2 #########################
 
-
-
-
+# Crrer un environement:  python3 -m venv venv
+# Activer l'environement: source venv/bin/activate
+# pip install scipy
+# pip list
+# Puis faire : pip freeze > requirements.txt  Ca c'est bien ca permet de faire un fichier txt avec les bonnes libraires
+# La personne qui veut l'utliser doit faire : pip install -r requirements.txt
 
 
 
