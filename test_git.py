@@ -4,11 +4,16 @@ from Maturite import Maturite
 from Action import Action
 from datetime import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 from Taux import Taux
 from Call import Call
 from Put import Put
 from math import exp
 from ZeroCoupon import ZeroCoupon
+from InterpolationCubique import InterpolationCubique
+from InterpolationLineaire import InterpolationLineaire
+from InterpolationNelsonSiegel import InterpolationNelsonSiegel
 
 # Création d'une instance de Maturite
 maturite_obj = Maturite("2024-02-20", "2029-02-20", "Act/365")
@@ -102,3 +107,39 @@ zc = ZeroCoupon(nom="Zero Coupon 2 ans", taux=0.03, maturite=maturite, nominal=1
 # Affichage du prix et de la description
 print(zc.prix())  # Affiche uniquement le prix du Zero Coupon
 print(zc)  # Affiche une description détaillée
+
+
+maturites = [0.25, 0.5, 1, 2, 5, 10, 20]  # Maturités en années
+taux = [0.01, 0.012, 0.015, 0.018, 0.022, 0.025, 0.03]  # Taux en décimal
+
+interp_lin = InterpolationLineaire(maturites, taux)
+interp_cub = InterpolationCubique(maturites, taux)
+interp_ns = InterpolationNelsonSiegel(maturites, taux)
+
+print("Interpolation linéaire à 3 ans:", interp_lin.interpoler(3))
+print("Interpolation cubique à 3 ans:", interp_cub.interpoler(3))
+print("Interpolation Nelson-Siegel à 3 ans:", interp_ns.interpoler(3))
+
+
+# Maturités pour l'affichage des courbes (grille fine)
+maturites_fines = np.linspace(min(maturites), max(maturites), 20)
+
+# Calcul des taux interpolés
+taux_lin = [interp_lin.interpoler(m) for m in maturites_fines]
+taux_cub = [interp_cub.interpoler(m) for m in maturites_fines]
+taux_ns = [interp_ns.interpoler(m) for m in maturites_fines]
+
+# Affichage des courbes
+plt.figure(figsize=(10, 5))
+plt.plot(maturites_fines, taux_lin, label="Interpolation Linéaire", linestyle="dashed")
+plt.plot(maturites_fines, taux_cub, label="Interpolation Cubique", linestyle="dotted")
+plt.plot(maturites_fines, taux_ns, label="Interpolation Nelson-Siegel", linestyle="solid")
+plt.scatter(maturites, taux, color="red", label="Taux observés")  # Points de données
+
+# Ajout des légendes et labels
+plt.xlabel("Maturité (années)")
+plt.ylabel("Taux (%)")
+plt.title("Comparaison des interpolations de la courbe des taux")
+plt.legend()
+plt.grid()
+plt.show()
