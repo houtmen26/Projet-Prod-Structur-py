@@ -1,6 +1,6 @@
 # ceci est un test
 
-from Classe import Maturite
+from Maturite import Maturite
 from Action import Action
 from datetime import datetime
 import pandas as pd
@@ -8,6 +8,7 @@ from Taux import Taux
 from Call import Call
 from Put import Put
 from math import exp
+from ZeroCoupon import ZeroCoupon
 
 # Création d'une instance de Maturite
 maturite_obj = Maturite("2024-02-20", "2029-02-20", "Act/365")
@@ -90,3 +91,14 @@ if abs(lhs - rhs) < 1e-4:
     print("La parité Call-Put est respectée.")
 else:
     print("La parité Call-Put n'est pas respectée.")
+
+
+# Création d'un objet Maturite avec convention Act/360
+maturite = Maturite(val_date="2024-03-25", mat_date="2026-03-25", convention="Act/360")
+
+# Création d’un Zero Coupon avec un taux de 3% et un nominal de 1000
+zc = ZeroCoupon(nom="Zero Coupon 2 ans", taux=0.03, maturite=maturite, nominal=1000, methode="actuariel")
+
+# Affichage du prix et de la description
+print(zc.prix())  # Affiche uniquement le prix du Zero Coupon
+print(zc)  # Affiche une description détaillée

@@ -39,18 +39,6 @@ class Maturite :
                 f" - Maturité en années : {self.maturite_en_annees:.4f} ({self.convention})")
 
 
-class taux :
-    def __init__(self):
-        pass
-    # obj : Courbe de taxux
-    # avec des methodes d'interpo (voir debut)
-
-class produits :
-    def __init__(self):
-        pass
-    # obj : pricer un ZC Bond
-    # obj2 : pricer un Fixed Rate bond
-
 
 
 
