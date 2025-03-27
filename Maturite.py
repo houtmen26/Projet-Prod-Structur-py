@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime
-import scipy
-from math import *
 
 class Maturite :
     def __init__(self,val_date:str,mat_date:str,convention : str):
@@ -40,34 +38,6 @@ class Maturite :
                 f" - Date de maturité : {self.mat_date.strftime('%Y-%m-%d')}\n"
                 f" - Maturité en années : {self.maturite_en_annees:.4f} ({self.convention})")
 
-
-class taux :
-    def __init__(self,taux,type_taux,maturite,nominal,frequence):
-        self.type = type_taux
-        self.taux = taux
-        self.matu = maturite
-        self.nominal = nominal
-        self.compo = frequence
-    # obj : Courbe de taxux
-
-    # avec des methodes d'interpo (voir debut)
-    def interpo(self):
-        scipy.interpolate.CubicSpline()
-    # obj : Courbe de taxux
-    # avec des methodes d'interpo (voir debut)
-    def calcul_taux(self) -> float:
-        if self.type== "composé":
-            return self.nominal*(1+self.taux/self.compo)**(self.compo*self.matu)
-        if self.type == "continu":
-            return self.nominal*exp(self.taux*self.matu)
-
-
-
-class produits :
-    def __init__(self):
-        pass
-    # obj : pricer un ZC Bond
-    # obj2 : pricer un Fixed Rate bond
 
 
 
