@@ -97,6 +97,10 @@
 # On peut heberger sur le cloud (on peut mettre du streamlite) et montrer au recruteur
 
 
+# Faire oblig -> maturite / convexite/ sensi / duration
+# Faire swap  -> maturite / convexite/ sensi / duration
+
+# Greeks
 
 
 
