@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from math import *
 import scipy.stats as si
 from scipy.optimize import minimize
-
+import time
 
 # Objectif est de définir le modele d'Heston et de le calibrer
 
@@ -19,6 +19,42 @@ print("voila la vol implicite : ",option_data['implied_volatility'])
 option_data['Maturity'] = (pd.to_datetime(option_data['expiration']) - pd.to_datetime(option_data['price_date'])).dt.days/365.0
 
 print("voici la maturité : ",option_data['Maturity'])
+# Définir une plage plus large de strikes qui couvre mieux votre espace
+strikes_ranges = [
+  (50, 75),  # Deep ITM
+  (75, 95),  # ITM
+  (95, 105),  # ATM
+  (105, 150),  # OTM
+  (150, 300)  # Deep OTM
+]
+
+maturity_ranges = [
+  (0.05, 0.15),  # Court terme
+  (0.15, 0.5),  # Moyen terme
+  (0.5, 1.0) , # Long terme (si disponible)
+  (1,1.5), # Long terme (si disponible)
+  (1.5,2.5) # Long terme (si disponible)
+]
+
+selected_options = []
+
+# Sélectionner les options de manière stratifiée
+for s_range in strikes_ranges:
+  for m_range in maturity_ranges:
+    bucket_options = option_data[
+      (option_data['strike'] >= s_range[0]) &
+      (option_data['strike'] <= s_range[1]) &
+      (option_data['Maturity'] > m_range[0]) &
+      (option_data['Maturity'] <= m_range[1])
+      ]
+
+    if len(bucket_options) > 0:
+      # Prendre 1-2 options de chaque bucket
+      selected_options.append(bucket_options.iloc[0:min(2, len(bucket_options))])
+
+# Concaténer les résultats
+option_data = pd.concat(selected_options)
+
 
 def payoff_heston(r,T, K, S0, rho, theta, k, neta, N, v0):
   delta_t = T/N
@@ -31,12 +67,13 @@ def payoff_heston(r,T, K, S0, rho, theta, k, neta, N, v0):
   for i in range(1,N):
     X = nrd.randn() # On simule une premiere gaussienne
     X1 = nrd.randn()  # On simule une seconde gaussienne
-    S[i]  = S[i-1]*exp((r-0.5*v[i-1])*delta_t + sqrt(v[i-1])*(rho*sqrt(delta_t)*X+ sqrt(1-rho**2)*sqrt(delta_t)*X1))
-    v[i] = v[i-1] + k*(theta - v[i-1])*delta_t + neta*sqrt(v[i-1])*sqrt(delta_t)*X + neta**2/4*delta_t*(X**2 - 1 )
-    vol[i] = sqrt(v[i])
+    sqrt_v = sqrt(v[i - 1]) if v[i - 1] > 0 else 0
+    S[i]  = S[i-1]*exp((r-0.5*v[i-1])*delta_t + sqrt_v*(rho*sqrt(delta_t)*X+ sqrt(1-rho**2)*sqrt(delta_t)*X1))
+    v[i] = v[i-1] + k*(theta - v[i-1])*delta_t + neta*sqrt_v*sqrt(delta_t)*X + neta**2/4*delta_t*(X**2 - 1 )
+    vol[i] = sqrt(abs(v[i]))
   return S, v, vol
 
-def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=10000, N=100, option_type='call'):
+def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=1000, N=100, option_type='call'):
 
   total_payoff = 0
 
@@ -64,11 +101,16 @@ def objective_function(params, option_data, S0, r):
   v0, rho, theta, k, eta = params
 
   total_error = 0
-  for _, row in option_data.iterrows():
-    K = row['strike']
-    T = row['Maturity']
-    market_price = row['mark']
-    option_type = row['type']  # 'call' ou 'put'
+  for i, row in enumerate(option_data.itertuples(), start=1):
+    K = row.strike
+    T = row.Maturity
+    market_price = row.mark
+    option_type = row.type
+
+    if pd.isna(market_price):
+      continue
+
+    print(f"Calibration sur option {i}/{len(option_data)}")
 
     # Prix selon le modèle
     model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0,
@@ -82,34 +124,42 @@ def objective_function(params, option_data, S0, r):
 
 def calibrate_heston_simplified(option_data, S0, r):
   # Fixer k et eta à des valeurs typiques
-  k_fixed = 2.0
-  eta_fixed = 0.3
 
-  # Valeurs initiales pour v0, theta, rho
-  initial_params = [0.04, -0.7, 0.04]
+
+  # Valeurs initiales pour v0, theta, rho,k,neta
+  initial_params = [0.04, -0.7, 0.04,1,0.5]
 
   # Bornes pour ces paramètres
-  bounds = [(0.001, 0.25),  # v0
-            (-0.99, 0.99),  # rho
-            (0.001, 0.25)]  # theta
+  bounds = [(0.001, 2),  # v0 (vol de départ)
+            (-0.99, 0.99),  # rho (correl donc entre -1 et 1)
+            (0.001, 2),  # theta
+            (0.01, 20), # k (retour a la moyenne)
+            (0.01, 7)]  # neta (vol of vol)
+
 
   def obj_simplified(params):
-    v0, rho, theta = params
-    return objective_function([v0, rho, theta, k_fixed, eta_fixed], option_data, S0, r)
+    v0, rho, theta,k,neta = params
+    return objective_function([v0, rho, theta, k, neta], option_data, S0, r)
 
   # Optimisation
   result = minimize(obj_simplified, initial_params, bounds=bounds, method='L-BFGS-B')
+  if not result.success:
+    print(" Optimisation échouée :", result.message)
 
-  v0, rho, theta = result.x
-  return [v0, rho, theta, k_fixed, eta_fixed]
+  v0, rho, theta,k,neta = result.x
+  return [v0, rho, theta, k, neta]
 
 # Prix spot et taux sans risque
 S0 = 100.0  # À ajuster selon votre actif
 r = 0.01    # À ajuster selon le taux actuel
 
-# Calibr ation
+# Calibration
+start = time.time()
 optimal_params = calibrate_heston_simplified(option_data, S0, r)
 v0, rho, theta, k, eta = optimal_params
+
+end = time.time()
+print(f"\n⏱️ Temps total de calibration : {end - start:.2f} secondes\n")
 
 print(f"Paramètres calibrés:")
 print(f"v0 = {v0:.6f} (variance initiale)")
