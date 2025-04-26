@@ -8,6 +8,8 @@ import scipy.stats as si
 from scipy.optimize import minimize
 import time
 
+
+
 # Objectif est de définir le modele d'Heston et de le calibrer
 
 option_data = pd.read_csv("options.csv",sep=';')
@@ -56,6 +58,7 @@ for s_range in strikes_ranges:
 option_data = pd.concat(selected_options)
 
 
+
 def payoff_heston(r,T, K, S0, rho, theta, k, neta, N, v0):
   delta_t = T/N
   S = [0] * N # Crée une liste de taille N pour S
@@ -69,11 +72,13 @@ def payoff_heston(r,T, K, S0, rho, theta, k, neta, N, v0):
     X1 = nrd.randn()  # On simule une seconde gaussienne
     sqrt_v = sqrt(v[i - 1]) if v[i - 1] > 0 else 0
     S[i]  = S[i-1]*exp((r-0.5*v[i-1])*delta_t + sqrt_v*(rho*sqrt(delta_t)*X+ sqrt(1-rho**2)*sqrt(delta_t)*X1))
-    v[i] = v[i-1] + k*(theta - v[i-1])*delta_t + neta*sqrt_v*sqrt(delta_t)*X + neta**2/4*delta_t*(X**2 - 1 )
+    v[i] = max(0, v[i-1] + k*(theta - v[i-1])*delta_t + neta*sqrt_v*sqrt(delta_t)*X + 0.25*neta**2*delta_t*(X**2 - 1))
     vol[i] = sqrt(abs(v[i]))
   return S, v, vol
 
-def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=1000, N=100, option_type='call'):
+def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=1000, N=100, option_type='call', seed=42):
+  # Fixer le seed pour la reproductibilité
+  np.random.seed(seed)
 
   total_payoff = 0
 
@@ -96,11 +101,12 @@ def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=1000,
   option_price = exp(-r * T) * (total_payoff / n_simulations)
   return option_price
 
+
 def objective_function(params, option_data, S0, r):
-
   v0, rho, theta, k, eta = params
-
   total_error = 0
+  constant_seed = 12345
+
   for i, row in enumerate(option_data.itertuples(), start=1):
     K = row.strike
     T = row.Maturity
@@ -112,46 +118,96 @@ def objective_function(params, option_data, S0, r):
 
     print(f"Calibration sur option {i}/{len(option_data)}")
 
-    # Prix selon le modèle
+    # Prix selon le modèle - AUGMENTER le nombre de simulations et UTILISER le seed
     model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0,
-                                      n_simulations=1000, N=100, option_type=option_type)
+                                      n_simulations=5000, N=100, option_type=option_type, seed=constant_seed)
 
-    # Erreur quadratique
-    error = (model_price - market_price) ** 2
-    total_error += error
+    # Pour le debug, afficher les prix
+    print(f"  Strike={K}, T={T}, Market={market_price:.4f}, Model={model_price:.4f}")
 
+    # Éviter les divisions par zéro ou par des valeurs très petites
+    denominator = max(0.01, abs(market_price))
+    error = ((model_price - market_price) / denominator) ** 2
+
+    weight = 1.0
+    if abs(K / S0 - 1) < 0.05:  # ATM
+      weight *= 2.0
+    if T < 0.25:  # Court terme
+      weight *= 1.5
+
+    total_error += error * weight
+
+  print(f"Erreur totale pour ces paramètres: {total_error:.6f}")
   return total_error
 
 def calibrate_heston_simplified(option_data, S0, r):
-  # Fixer k et eta à des valeurs typiques
+    # Limiter éventuellement le nombre d'options pour les tests
+  if len(option_data) > 10:
+    print(f"Attention: nombreuses options ({len(option_data)}). Possible ralentissement.")
+  print("\n=== Vérification du stock et des options ===\n")
+  print(f"Prix spot utilisé (S0) : {S0}")
+  print("\nAperçu des premières options :")
+  print(option_data[['strike', 'mark', 'Maturity', 'type']].head(10))
+  print("\nRésumé statistique des strikes et des prix de marché :")
+  print(option_data[['strike', 'mark']].describe())
+  print("\nRésumé statistique des maturités :")
+  print(option_data['Maturity'].describe())
 
-
-  # Valeurs initiales pour v0, theta, rho,k,neta
-  initial_params = [0.04, -0.7, 0.04,1,0.5]
-
-  # Bornes pour ces paramètres
+  # Bornes pour les paramètres
   bounds = [(0.001, 2),  # v0 (vol de départ)
             (-0.99, 0.99),  # rho (correl donc entre -1 et 1)
             (0.001, 2),  # theta
-            (0.01, 20), # k (retour a la moyenne)
-            (0.01, 7)]  # neta (vol of vol)
+            (0.01, 20),  # k (retour a la moyenne)
+            (0.01, 7)]  # eta (vol of vol)
 
+  # Plusieurs points de départ pour éviter les minima locaux
+  initial_params_list = [
+    [0.04, -0.7, 0.04, 1.0, 0.5],
+    [0.1, -0.5, 0.1, 2.0, 0.3],
+    [0.05, -0.3, 0.05, 3.0, 0.4]
+  ]
 
+  # Définition de la fonction objective simplifiée
   def obj_simplified(params):
-    v0, rho, theta,k,neta = params
-    return objective_function([v0, rho, theta, k, neta], option_data, S0, r)
+    v0, rho, theta, k, eta = params
+    return objective_function([v0, rho, theta, k, eta], option_data, S0, r)
 
-  # Optimisation
-  result = minimize(obj_simplified, initial_params, bounds=bounds, method='L-BFGS-B')
-  if not result.success:
-    print(" Optimisation échouée :", result.message)
+  # Tester les valeurs initiales
+  print("Valeur de la fonction objectif (initiale) :", obj_simplified(initial_params_list[0]))
+  test_params = [0.08, -0.5, 0.06, 1.2, 0.8]
+  print("Valeur de la fonction objectif (modifiée) :", obj_simplified(test_params))
 
-  v0, rho, theta,k,neta = result.x
-  return [v0, rho, theta, k, neta]
+  # Optimisation avec plusieurs points de départ
+  best_result = None
+  best_error = float('inf')
+
+  for init_params in initial_params_list:
+    print(f"\nEssai d'optimisation avec point de départ: {init_params}")
+    result = minimize(obj_simplified, init_params, bounds=bounds,
+                      method='L-BFGS-B', options={'maxiter': 500, 'ftol': 1e-8})
+
+    print(f"Résultat intermédiaire: fun={result.fun}, success={result.success}")
+
+    if result.fun < best_error:
+      best_error = result.fun
+      best_result = result
+      print(f"Nouveau meilleur résultat trouvé! Erreur: {best_error}")
+
+    if best_result is None or not best_result.success:
+      print("Aucune optimisation n'a réussi. Retour des meilleurs paramètres trouvés.")
+      if best_result is None:
+        # Si aucun résultat, retourner les paramètres initiaux du premier essai
+        return initial_params_list[0]
+
+      # Retourner les meilleurs paramètres trouvés
+    v0, rho, theta, k, eta = best_result.x
+    return [v0, rho, theta, k, eta]
+
+
 
 # Prix spot et taux sans risque
-S0 = 100.0  # À ajuster selon votre actif
-r = 0.01    # À ajuster selon le taux actuel
+S0 = 215.0  # À ajuster selon votre actif
+r = 0.05  # À ajuster selon le taux actuel
 
 # Calibration
 start = time.time()
@@ -167,16 +223,3 @@ print(f"rho = {rho:.6f} (corrélation)")
 print(f"theta = {theta:.6f} (variance long-terme)")
 print(f"k = {k:.6f} (vitesse de retour)")
 print(f"eta = {eta:.6f} (vol de vol)")
-
-
-
-
-
-
-
-
-
-
-
-
-
