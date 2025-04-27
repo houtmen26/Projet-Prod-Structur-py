@@ -1,4 +1,4 @@
-from Modele Heston import payoff_heston
+
 import pandas as pd
 import numpy as np
 import numpy as np
@@ -10,6 +10,7 @@ from math import *
 import scipy.stats as si
 from scipy.optimize import minimize
 import time
+from Modele Heston import payoff_heston
 
 
 ### L'objectif ici  étant de pricer un call avec le modele de Heston
@@ -20,45 +21,18 @@ import time
 # il faudra faire des test pour que ca dure un peu moins de 1 minutes sinon ca sera trop long (call spread, strip strap ect prendront
 # trop de temps)
 
+param = [0.098728,-0.489983,0.017104, 0.180130,0.220737]
 
+def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=100, option_type=None, seed=None):
+  if seed is None:
+    seed = np.random.randint(0, 10000)
+  S_path = payoff_heston(r,T, K, S0, rho, theta, k, eta, N, Nmc,seed,v0)
+  S_T = S_path[:,-1]
+  if option_type.lower() == 'call':
+    payoff = np.maximum(S_T - K,0)
+  else :
+    payoff = np.maximum(K-S_T,0)
 
-def heston_option_PUT(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=1000, N=100, option_type='call', seed=42):
-  # Fixer le seed pour la reproductibilité
-  np.random.seed(seed)
-  somme = 0
-  total_payoff = 0
-
-    for _ in range(n_simulations):
-        # Générer une trajectoire
-        S = payoff_heston(r, T, K, S0, rho, theta, k, eta, N, v0)[0]
-
-        # Prix final de l'actif
-        S_T = S[-1]
-
-        # Calculer le payoff d'un put
-
-        payoff = max(K - S_T, 0)
-        somme+=payoff
-    resultat = exp(-r*T)*somme/(n_simulations)
-    return resultat
-
-def heston_option_Call(r, T, K, S0, rho, theta, k, eta, v0, n_simulations=1000, N=100, option_type='call', seed=42):
-    # Fixer le seed pour la reproductibilité
-    np.random.seed(seed)
-
-    somme = 0
-    for _ in range(n_simulations):
-        # Générer une trajectoire
-        S = payoff_heston(r, T, K, S0, rho, theta, k, eta, N, v0)[0]
-
-        # Prix final de l'actif
-        S_T = S[-1]
-
-        # Calculer le payoff
-
-        payoff = max(S_T - K, 0)
-        somme += payoff
-    resultat = exp(-r * T) * somme / (n_simulations)
-    return resultat
+  return exp(-r*T)*np.mean(payoff)
 
 
