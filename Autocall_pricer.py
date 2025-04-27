@@ -64,12 +64,10 @@ if __name__ == "__main__":
 
 
 
-def option_barriere_call_UPandIn(S0, params_heston, barriere,T, r, Nmc=10000, N, seed=42):
+def option_barriere_call_UPandIn(S0, K,params_heston, barriere,T, r, Nmc=10000, N=252, seed=42):
     v0, rho, theta, k, eta = params_heston
-    dt = T/ N
-    time_grid = np.linspace(0, T, N + 1)
     # Simulation de S(t) avec Heston
-    S_paths = payoff_heston(r, T, K=0, S0=S0, rho=rho, theta=theta, k=k, eta=eta, N=N, Nmc=Nmc, seed=seed, v0=v0)
+    S_paths = payoff_heston(r, T, K, S0=S0, rho=rho, theta=theta, k=k, eta=eta, N=N, Nmc=Nmc, seed=seed, v0=v0)
 
     crossed_barrier = np.max(S_paths, axis=1) >= barriere
     S_T = S_paths[:, -1]
@@ -79,16 +77,16 @@ def option_barriere_call_UPandIn(S0, params_heston, barriere,T, r, Nmc=10000, N,
     payoffs = np.where(crossed_barrier, payoff_call, 0)
 
     discounted_payoffs = np.exp(-r * T) * payoffs
+    prob_activation = np.mean(crossed_barrier)
+
     # Prix estimé
     price = np.mean(discounted_payoffs)
-    return price
+    return price,prob_activation
 
-def option_barriere_call_UPandOut(S0, params_heston, barriere,T, r, Nmc=10000, N, seed=42):
+def option_barriere_call_UPandOut(S0, K,params_heston, barriere,T, r, Nmc=10000, N=252, seed=42):
     v0, rho, theta, k, eta = params_heston
-    dt = T/ N
-    time_grid = np.linspace(0, T, N + 1)
     # Simulation de S(t) avec Heston
-    S_paths = payoff_heston(r, T, K=0, S0=S0, rho=rho, theta=theta, k=k, eta=eta, N=N, Nmc=Nmc, seed=seed, v0=v0)
+    S_paths = payoff_heston(r, T, K, S0=S0, rho=rho, theta=theta, k=k, eta=eta, N=N, Nmc=Nmc, seed=seed, v0=v0)
 
     crossed_barrier = np.max(S_paths, axis=1) >= barriere
     S_T = S_paths[:, -1]
@@ -98,6 +96,7 @@ def option_barriere_call_UPandOut(S0, params_heston, barriere,T, r, Nmc=10000, N
     payoffs = np.where(crossed_barrier,  0,payoff_call)
 
     discounted_payoffs = np.exp(-r * T) * payoffs
+    prob_activation = np.mean(crossed_barrier)
     # Prix estimé
     price = np.mean(discounted_payoffs)
-    return price
+    return price,prob_activation
