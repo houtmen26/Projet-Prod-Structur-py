@@ -15,13 +15,9 @@ from scipy.optimize import differential_evolution
 
 option_data = pd.read_csv("options.csv",sep=';')
 
-print('voici ce quon chercher : ',option_data)
-
-print("voila la vol implicite : ",option_data['implied_volatility'])
-
 option_data['Maturity'] = (pd.to_datetime(option_data['expiration']) - pd.to_datetime(option_data['price_date'])).dt.days/365.0
 
-print("voici la maturité : ",option_data['Maturity'])
+
 # Définir une plage plus large de strikes qui couvre mieux votre espace
 strikes_ranges = [
   (150,180),
@@ -110,7 +106,7 @@ def objective_function(params, option_data, S0, r):
 
     random_seed = np.random.randint(0, 1000000)
     # Prix selon le modèle - AUGMENTER le nombre de simulations et UTILISER le seed
-    model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc= 30000, N=100, option_type=option_type, seed=random_seed)
+    model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc= 1000, N=100, option_type=option_type, seed=random_seed)
 
     # Pour le debug, afficher les prix
     print(f"  Strike={K}, T={T}, Market={market_price:.4f}, Model={model_price:.4f}")
@@ -120,9 +116,9 @@ def objective_function(params, option_data, S0, r):
     moneyness = K / S0
     weight = 1.0
     if 0.95 <= moneyness <= 1.05:  # ATM
-      weight *= 3.0
-    if T < 0.25:  # Short-term
       weight *= 2.0
+    if T < 0.25:  # Short-term
+      weight *= 1.5
 
     total_error += normalized_error  * weight
 
@@ -156,8 +152,8 @@ def calibrate_heston_simplified(option_data, S0, r):
   bounds = [(0.001, 2),  # v0 (vol de départ)
             (-0.99, 0.99),  # rho (correl donc entre -1 et 1)
             (0.001, 2),  # theta
-            (0.01, 20),  # k (retour a la moyenne)
-            (0.01, 7)]  # eta (vol of vol)
+            (0.01, 6),  # k (retour a la moyenne)
+            (0.01, 2)]  # eta (vol of vol)
 
   # Plusieurs points de départ pour éviter les minima locaux
   initial_params_list = [
@@ -201,22 +197,21 @@ def calibrate_heston_simplified(option_data, S0, r):
     v0, rho, theta, k, eta = best_result.x
     return [v0, rho, theta, k, eta]
 
+if __name__ == "__main__":
+  # Prix spot et taux sans risque
+  S0 = 215  # À ajuster selon votre actif
+  r = 0.045  # À ajuster selon le taux actuel
 
+  # Calibration
+  start = time.time()
+  optimal_params = calibrate_heston_simplified(option_data, S0, r)
+  v0, rho, theta, k, eta = optimal_params
 
-# Prix spot et taux sans risque
-S0 = 215  # À ajuster selon votre actif
-r = 0.045  # À ajuster selon le taux actuel
-
-# Calibration
-start = time.time()
-optimal_params = calibrate_heston_simplified(option_data, S0, r)
-v0, rho, theta, k, eta = optimal_params
-
-end = time.time()
-print(f"\n⏱️ Temps total de calibration : {end - start:.2f} secondes\n")
-print(f"Paramètres calibrés:")
-print(f"v0 = {v0:.6f} (variance initiale)")
-print(f"rho = {rho:.6f} (corrélation)")
-print(f"theta = {theta:.6f} (variance long-terme)")
-print(f"k = {k:.6f} (vitesse de retour)")
-print(f"eta = {eta:.6f} (vol de vol)")
+  end = time.time()
+  print(f"\n Temps total de calibration : {end - start:.2f} secondes\n")
+  print(f"Paramètres calibrés:")
+  print(f"v0 = {v0:.6f} (variance initiale)")
+  print(f"rho = {rho:.6f} (corrélation)")
+  print(f"theta = {theta:.6f} (variance long-terme)")
+  print(f"k = {k:.6f} (vitesse de retour)")
+  print(f"eta = {eta:.6f} (vol de vol)")

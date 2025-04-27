@@ -71,7 +71,7 @@
 
 ## 1 PRICING /Mesure risque :
 
-#il Faut caclculer les greeks pour tout y comporis obligation
+#il Faut caclculer les greeks pour tout y comporis obligation (OK v)
 # Faire un payoff sous frome de graphique + essaye de determiner les zones de probas (proba d'exercice) c'est encore mieux
 # Pour la mesure de risk , chose sympa a avoir c'est un stress scénario (faire passser la vol de 20% à 40%) et voir l'impact du changement de vol sur le produit (facile)
 
@@ -79,15 +79,15 @@
 ## 2 PARTIE FINANCE/PRODUITS :
 
 # Il faut faire une douzaine de produit mais faire bien varier : elementaire (call/put actions et taux)
-# faire strategie optionnelle (call spread,strip,strap,strandle)
-# Et surtout faire un type de produit autocall (un peu plus complexe) --> MC par excellence
-# L'idee cest de reutiliser ce qu'on a fait avant pour faire un nouveau produit
-# Exemple un call spread doit etre facile a coder juste faire call_K1 - call_k2 en 1 ligne
+# faire strategie optionnelle (call spread,strip,strap,strandle)  (OK v)
+# Et surtout faire un type de produit autocall (un peu plus complexe) --> MC par excellence (OK v)
+# L'idee cest de reutiliser ce qu'on a fait avant pour faire un nouveau produit (OK v)
+# Exemple un call spread doit etre facile a coder juste faire call_K1 - call_k2 en 1 ligne (OK v)
 
-## 3 PARTIE MODEELE:
-# Faire du MC
-# soit faire que de la vol sto, soit faire que un taux sto ou les deux
-# Idee de faire un modele de diffusion avec une calibration sous jacente
+## 3 PARTIE MODEELE: OK POUR CETTE PARTIE V
+# Faire du MC  (OK v)
+# soit faire que de la vol sto, soit faire que un taux sto ou les deux (OK v)
+# Idee de faire un modele de diffusion avec une calibration sous jacente (OK v)
 
 
 #PARTIE IT :
@@ -99,8 +99,6 @@
 
 # Faire oblig -> maturite / convexite/ sensi / duration
 # Faire swap  -> maturite / convexite/ sensi / duration
-
-# Greeks
 
 
 
