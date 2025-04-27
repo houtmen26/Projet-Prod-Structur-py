@@ -81,7 +81,7 @@ def payoff_heston(r,T, K, S0, rho, theta, k, eta, N, Nmc,seed,v0):
 
   return S
 
-def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=100, option_type=None, seed=None):
+def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc=30000, N=100, option_type=None, seed=None):
   if seed is None:
     seed = np.random.randint(0, 10000)
   S_path = payoff_heston(r,T, K, S0, rho, theta, k, eta, N, Nmc,seed,v0)
@@ -110,7 +110,7 @@ def objective_function(params, option_data, S0, r):
 
     random_seed = np.random.randint(0, 1000000)
     # Prix selon le modèle - AUGMENTER le nombre de simulations et UTILISER le seed
-    model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc= 1000, N=100, option_type=option_type, seed=random_seed)
+    model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc= 30000, N=100, option_type=option_type, seed=random_seed)
 
     # Pour le debug, afficher les prix
     print(f"  Strike={K}, T={T}, Market={market_price:.4f}, Model={model_price:.4f}")
