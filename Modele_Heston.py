@@ -204,7 +204,7 @@ def calibrate_heston_simplified(option_data, S0, r):
 
 
 # Prix spot et taux sans risque
-S0 = 210  # À ajuster selon votre actif
+S0 = 215  # À ajuster selon votre actif
 r = 0.045  # À ajuster selon le taux actuel
 
 # Calibration
