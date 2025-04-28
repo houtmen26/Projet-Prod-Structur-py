@@ -26,7 +26,7 @@ r = 0.045  # À ajuster selon le taux actuel
 
 param = [0.098728,-0.489983,0.017104, 0.180130,0.220737]
 
-def heston_option_price_call(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=100, option_type=None, seed=None):
+def heston_option_price_call(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=100, seed=None):
   if seed is None:
     seed = np.random.randint(0, 10000)
   S_path = payoff_heston(r,T, K, S0, rho, theta, k, eta, N, Nmc,seed,v0)
@@ -34,12 +34,10 @@ def heston_option_price_call(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=10
   payoff = np.maximum(S_T - K,0)
   return exp(-r*T)*np.mean(payoff)
 
-def heston_option_price_put(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=100, option_type=None, seed=None):
+def heston_option_price_put(r, T, K, S0, rho, theta, k, eta, v0, Nmc=1000, N=100,  seed=None):
   if seed is None:
     seed = np.random.randint(0, 10000)
   S_path = payoff_heston(r,T, K, S0, rho, theta, k, eta, N, Nmc,seed,v0)
   S_T = S_path[:,-1]
   payoff = np.maximum(K - S_T,0)
   return exp(-r*T)*np.mean(payoff)
-
-
