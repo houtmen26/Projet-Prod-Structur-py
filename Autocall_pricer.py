@@ -7,6 +7,7 @@ from ZeroCoupon import ZeroCoupon
 from Maturite import Maturite
 import matplotlib.pyplot as plt
 
+
 def price_autocall_heston(S0, params_heston, autocall_params, r, Nmc=10000, N_steps=252, seed=42):
     v0, rho, theta, k, eta = params_heston
 

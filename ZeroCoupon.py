@@ -3,30 +3,16 @@ from math import exp
 from Produit import Produit  
 from Maturite import Maturite
 
-class ZeroCoupon(Produit):
-    def __init__(self, nom: str, taux: float, maturite: Maturite, nominal: float, methode: str):
-        """
-        Initialisation du Zero Coupon.
-
-        :param nom: str : Le nom du produit.
-        :param taux: float : Le taux d'intérêt (ex: 0.03 pour 3%).
-        :param maturite: Maturite : Un objet de la classe Maturite pour gérer la durée et la convention.
-        :param nominal: float : Le nominal du produit.
-        :param methode: str : La méthode d actualisation ('lineaire', 'actuariel', 'continu').
-        """
-        super().__init__(nom)  # Appel du constructeur de Produit
+class ZeroCoupon:
+    def __init__(self, nom: str, taux: float, maturite: float, nominal: float, methode: str):
+        self.nom = nom
         self.taux = taux
-        self.maturite = maturite
+        self.maturite = maturite  # directement un float
         self.nominal = nominal
         self.methode = methode.lower()
 
     def prix(self) -> float:
-        """
-        Calcule le prix du zéro coupon en fonction de la méthode choisie.
-
-        :return: float : La valeur actuelle du zéro coupon.
-        """
-        T = self.maturite.maturite_en_annees  # Récupérer la maturité selon la convention choisie
+        T = self.maturite  # plus d'objet .maturite_en_annees
 
         if self.methode == "lineaire":
             prix_unitaire = 1 / (1 + self.taux * T)
@@ -36,6 +22,8 @@ class ZeroCoupon(Produit):
             prix_unitaire = exp(-self.taux * T)
         else:
             raise ValueError("Méthode non reconnue. Choisir entre 'lineaire', 'actuariel', 'continu'.")
+
+        return prix_unitaire * self.nominal
 
         return prix_unitaire * self.nominal  # Prix ajusté par le nominal
 
