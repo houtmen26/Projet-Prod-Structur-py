@@ -54,6 +54,39 @@ for s_range in strikes_ranges:
 # Concaténer les résultats
 option_data = pd.concat(selected_options)
 
+# ======================================
+def load_option_data():
+    df = pd.read_csv("options.csv", sep=';')
+    df['Maturity'] = (pd.to_datetime(df['expiration']) - pd.to_datetime(df['price_date'])).dt.days / 365.0
+
+    strikes_ranges = [
+        (150, 180), (180, 200), (200, 220),
+        (220, 250), (250, 300)
+    ]
+
+    maturity_ranges = [
+        (0.05, 0.15), (0.15, 0.5), (0.5, 1.0),
+        (1.0, 1.5), (1.5, 2.5)
+    ]
+
+    selected = []
+
+    for s_range in strikes_ranges:
+        for m_range in maturity_ranges:
+            bucket = df[
+                (df['strike'] >= s_range[0]) &
+                (df['strike'] <= s_range[1]) &
+                (df['Maturity'] > m_range[0]) &
+                (df['Maturity'] <= m_range[1])
+            ]
+            if len(bucket) > 0:
+                selected.append(bucket.iloc[0:min(2, len(bucket))])
+
+    return pd.concat(selected)
+
+# ======================================
+# Variable globale accessible
+# ======================================
 
 
 def payoff_heston(r,T, K, S0, rho, theta, k, eta, N, Nmc,seed,v0):
@@ -90,7 +123,7 @@ def heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc=30000, N=100, o
   return exp(-r*T)*np.mean(payoff)
 
 
-def objective_function(params, option_data, S0, r):
+def objective_function(params, option_data, S0, r,Nmc,N):
   v0, rho, theta, k, eta = params
   total_error = 0
   np.random.seed(12345)
@@ -106,7 +139,7 @@ def objective_function(params, option_data, S0, r):
 
     random_seed = np.random.randint(0, 1000000)
     # Prix selon le modèle - AUGMENTER le nombre de simulations et UTILISER le seed
-    model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc= 1000, N=100, option_type=option_type, seed=random_seed)
+    model_price = heston_option_price(r, T, K, S0, rho, theta, k, eta, v0, Nmc= Nmc, N=N, option_type=option_type, seed=random_seed)
 
     # Pour le debug, afficher les prix
     print(f"  Strike={K}, T={T}, Market={market_price:.4f}, Model={model_price:.4f}")
@@ -126,27 +159,8 @@ def objective_function(params, option_data, S0, r):
 
   return total_error
 
-def calibrate_heston_simplified(option_data, S0, r):
-    # Limiter éventuellement le nombre d'options pour les tests
-  if len(option_data) > 10:
-    print(f"Attention: nombreuses options ({len(option_data)}). Possible ralentissement.")
-  print("\n=== Vérification du stock et des options ===\n")
-  print(f"Prix spot utilisé (S0) : {S0}")
-  print("\nAperçu des premières options :")
-  print(option_data[['strike', 'mark', 'Maturity', 'type']].head(10))
-  print("\nRésumé statistique des strikes et des prix de marché :")
-  print(option_data[['strike', 'mark']].describe())
-  print("\nRésumé statistique des maturités :")
-  print(option_data['Maturity'].describe())
+def calibrate_heston_simplified(option_data, S0, r,Nmc,N):
 
-  print("\n✅ Voici les options utilisées pour la calibration :\n")
-
-  for i, row in option_data.iterrows():
-    print(f"Option {i + 1}: Strike={row['strike']:.2f}, Maturity={row['Maturity']:.4f} ans, " 
-          f"Type={row['type']}, Mark={row['mark']:.4f}, "
-          f"Last={row['last']:.4f}, Volume={row['volume']}, OI={row['open_interest']}")
-
-    print("\n=== Fin de la liste des options calibrées ===\n")
 
   # Bornes pour les paramètres
   bounds = [(0.001, 2),  # v0 (vol de départ)
@@ -165,12 +179,9 @@ def calibrate_heston_simplified(option_data, S0, r):
   # Définition de la fonction objective simplifiée
   def obj_simplified(params):
     v0, rho, theta, k, eta = params
-    return objective_function([v0, rho, theta, k, eta], option_data, S0, r)
+    return objective_function([v0, rho, theta, k, eta], option_data, S0, r,Nmc,N)
 
-  # Tester les valeurs initiales
-  print("Valeur de la fonction objectif (initiale) :", obj_simplified(initial_params_list[0]))
   test_params = [0.08, -0.5, 0.06, 1.2, 0.8]
-  print("Valeur de la fonction objectif (modifiée) :", obj_simplified(test_params))
 
   # Optimisation avec plusieurs points de départ
   best_result = None
@@ -201,10 +212,11 @@ if __name__ == "__main__":
   # Prix spot et taux sans risque
   S0 = 215  # À ajuster selon votre actif
   r = 0.045  # À ajuster selon le taux actuel
-
+  Nmc=10000
+  N=100
   # Calibration
   start = time.time()
-  optimal_params = calibrate_heston_simplified(option_data, S0, r)
+  optimal_params = calibrate_heston_simplified(option_data, S0, r,Nmc,N)
   v0, rho, theta, k, eta = optimal_params
 
   end = time.time()
