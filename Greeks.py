@@ -1,4 +1,4 @@
-from Call_Heston import heston_option_price_put,heston_option_price_call
+from Call_Heston import heston_option_price_put, heston_option_price_call, param
 from math import *
 import pandas as pd
 import numpy as np
@@ -214,9 +214,17 @@ call_spread = CallSpread(
     strikes=[230,260],
     mc_config=mc_config
 )
+strike = 220
+barriere = 240
+S0 = 100
+r = 0.03
+maturite = 1
+strike = 230
+h1 = 0.5  # 0.5% du strike+
+call_ = Put(action,maturite,param,r,strike,mc_config)
 
-analyzer = GreekAnalyzer(call_spread, h=0.1, seed=42)
-analyzer.plot_all_greeks(spot_range=np.linspace(80, 280, 100))
+analyzer = GreekAnalyzer(call_, h=0.1, seed=42)
+analyzer.plot_all_greeks(spot_range=np.linspace(80, 350, 100))
 # Analyse
 #analyzer = GreekAnalyzer(call, h=0.01, seed=42)
 

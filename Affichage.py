@@ -207,10 +207,14 @@ def show_pricer():
     Les paramètres par défaut sont ceux pré-calibrés (Nmc=20 000), mais vous pouvez les modifier manuellement.
     """)
 
-    # Sélection du produit
+    # Sélection du produit avec tous les nouveaux produits
     produit = st.selectbox("Choisissez un produit :", [
         "Call", "Put", "CallSpread", "Straddle", "Strangle", "Strip", "Strap",
-        "OptionCallBinaire", "ReverseConvertible", "Autocall"])
+        "OptionCallBinaire", "ReverseConvertible", "Autocall",
+        "OptionBarriereUpAndIn_CALL", "OptionBarriereUpAndOutCall",
+        "OptionBarriereDownAndOutCall", "OptionBarriereUpAndInPut",
+        "OptionBarriereUpAndOutPut", "OptionBarriereDownAndInCall",
+        "NoteCapitalProtegee"])
 
     # Paramètres communs
     st.subheader("Paramètres généraux")
@@ -222,7 +226,7 @@ def show_pricer():
     with col3:
         r = st.number_input("Taux sans risque (r)", value=0.03)
 
-    # Paramètres de Heston (pré-remplis avec les valeurs calibrées ou par défaut)
+    # Paramètres de Heston
     st.subheader("Paramètres du modèle de Heston")
     col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
@@ -269,11 +273,12 @@ def show_pricer():
 
     elif produit == "OptionCallBinaire":
         strike = st.number_input("Strike", value=100.0)
-        instrument = OptionCallBinaire(action, maturite, param, r, strike, 0.5, mc_config)
+        h1 = st.number_input("Paramètre h1", value=0.5, step=0.1, format="%.2f")
+        instrument = OptionCallBinaire(action, maturite, param, r, strike, h1, mc_config)
 
     elif produit == "ReverseConvertible":
-        coupon = st.number_input("Coupon (%)", value=0.1)
-        barrier = st.number_input("Barrière de protection (% S0)", value=0.7)
+        coupon = st.number_input("Coupon (%)", value=0.1, step=0.1, format="%.2f")
+        barrier = st.number_input("Barrière de protection (% S0)", value=0.7, step=0.1, format="%.2f")
         nominal = st.number_input("Nominal", value=1000)
         instrument = ReverseConvertible(action, maturite, param, r, coupon, barrier, nominal, mc_config=mc_config)
 
@@ -281,9 +286,9 @@ def show_pricer():
         st.subheader("Paramètres Autocall")
         nb_obs = st.slider("Nombre de dates d'observation", 1, 6, 4)
         observation_dates = [round(i * maturite / nb_obs, 2) for i in range(1, nb_obs + 1)]
-        barrier = st.number_input("Barrière (%)", value=1.0)
+        barrier = st.number_input("Barrière (%)", value=1.0, step=0.1, format="%.2f")
         coupons = [round((i + 1) * 0.02, 2) for i in range(nb_obs)]
-        protection_barrier = st.number_input("Barrière de protection (%)", value=0.6)
+        protection_barrier = st.number_input("Barrière de protection (%)", value=0.6, step=0.1, format="%.2f")
         autocall_params = {
             'observation_dates': observation_dates,
             'barriers': [barrier] * nb_obs,
@@ -292,25 +297,78 @@ def show_pricer():
         }
         instrument = Autocall(action, maturite, param, r, autocall_params, mc_config)
 
+    # Nouveaux produits barrières
+    elif produit in ["OptionBarriereUpAndIn_CALL", "OptionBarriereUpAndOutCall",
+                     "OptionBarriereDownAndOutCall", "OptionBarriereUpAndInPut",
+                     "OptionBarriereUpAndOutPut", "OptionBarriereDownAndInCall"]:
+        strike = st.number_input("Strike", value=100.0)
+        barriere = st.number_input("Niveau de barrière", value=120.0 if "Up" in produit else 80.0)
+
+        if produit == "OptionBarriereUpAndIn_CALL":
+            instrument = OptionBarriereUpAndIn_CALL(action, maturite, param, r, strike, barriere, mc_config)
+        elif produit == "OptionBarriereUpAndOutCall":
+            instrument = OptionBarriereUpAndOutCall(action, maturite, param, r, strike, barriere, mc_config)
+        elif produit == "OptionBarriereDownAndOutCall":
+            instrument = OptionBarriereDownAndOutCall(action, maturite, param, r, strike, barriere, mc_config)
+        elif produit == "OptionBarriereUpAndInPut":
+            instrument = OptionBarriereUpAndInPut(action, maturite, param, r, strike, barriere, mc_config)
+        elif produit == "OptionBarriereUpAndOutPut":
+            instrument = OptionBarriereUpAndOutPut(action, maturite, param, r, strike, barriere, mc_config)
+        elif produit == "OptionBarriereDownAndInCall":
+            instrument = OptionBarriereDownAndInCall(action, maturite, param, r, strike, barriere, mc_config)
+
+    elif produit == "NoteCapitalProtegee":
+        strike = st.number_input("Strike", value=100.0)
+        barriere = st.number_input("Barrière de désactivation", value=120.0)
+        rebate = st.number_input("Rebate (compensation si déclenchement)", value=0.0)
+        nominal = st.number_input("Nominal", value=1000)
+        instrument = NoteCapitalProtegee(action, maturite, param, r, strike, barriere, rebate, nominal,
+                                         mc_config=mc_config)
+
+
+    # Déplacer cette partie avant le bouton "Calculer le prix"
+    st.session_state.params_df = pd.DataFrame({
+        "Paramètre": ["S0", "Maturité", "Taux sans risque", "v0", "rho", "theta", "k", "eta", "Nmc", "N"],
+        "Valeur": [S0, maturite, r, v0, rho, theta, k, eta, Nmc, N]
+    })
     if st.button("Calculer le prix"):
         with st.spinner("Calcul en cours... (Cette opération peut prendre plusieurs minutes)"):
             try:
-                prix = instrument.price()
+                # Calcul du prix
+                if "OptionBarriere" in produit or produit == "NoteCapitalProtegee":
+                    prix, proba = instrument.price()
+                    st.session_state.proba_activation = proba
+                else:
+                    prix = instrument.price()
+
+                # Sauvegarde des résultats
+                st.session_state.prix_calcule = prix
+                st.session_state.instrument = instrument
+
                 st.success(f"💰 Prix estimé : {prix:.4f} €")
+                if hasattr(st.session_state, 'proba_activation'):
+                    st.info(f"ℹ️ Probabilité d'activation/désactivation: {st.session_state.proba_activation:.2%}")
                 st.balloons()
 
-                # Affichage des paramètres utilisés
-                st.markdown("### Paramètres utilisés pour le calcul :")
-                params_df = pd.DataFrame({
-                    "Paramètre": ["S0", "Maturité", "Taux sans risque", "v0", "rho", "theta", "k", "eta", "Nmc", "N"],
-                    "Valeur": [S0, maturite, r, v0, rho, theta, k, eta, Nmc, N]
-                })
-                st.table(params_df.style.format({"Valeur": "{:.4f}"}))
-
             except Exception as e:
-                st.error(f"Une erreur est survenue lors du calcul : {str(e)}")
-                st.error("Veuillez vérifier vos paramètres et réessayer.")
+                pass
 
+    # Afficher les résultats et le graphique en dehors du bouton
+    if 'prix_calcule' in st.session_state and st.session_state.prix_calcule is not None:
+        st.markdown("### Paramètres utilisés pour le calcul :")
+        st.table(st.session_state.params_df.style.format({"Valeur": "{:.4f}"}))
+
+        # Checkbox pour afficher le graphique
+        if st.checkbox("Afficher le graphique de payoff", key="show_payoff"):
+            try:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                if hasattr(st.session_state.instrument, 'plot_payoff'):
+                    st.session_state.instrument.plot_payoff(ax=ax)
+                    st.pyplot(fig)
+                else:
+                    st.warning("Ce produit ne possède pas de visualisation de payoff implémentée.")
+            except Exception as e:
+                st.error(f"Erreur lors de l'affichage du payoff: {str(e)}")
 
 # ======================================
 # NAVIGATION

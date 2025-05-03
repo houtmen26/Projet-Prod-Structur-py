@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from Modele_Heston import payoff_heston
 from math import *
 import matplotlib.pyplot as plt
-
+import streamlit as st
 from ZeroCoupon import ZeroCoupon
 
 @dataclass
@@ -70,17 +70,23 @@ class Call(ProduitFinancier, HestonOptionMixin):
             seed=self.mc_config.seed
         )
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.strike, 1.5 * self.strike, 100)
         payoff = np.maximum(S_range - self.strike, 0)
-        plt.plot(S_range, payoff, label="Call Payoff")
-        plt.axvline(self.strike, color='gray', linestyle='--', label='Strike')
-        plt.title("Payoff d'un Call")
-        plt.xlabel("Prix du sous-jacent")
-        plt.ylabel("Payoff à maturité")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Call Payoff")
+        ax.axvline(self.strike, color='gray', linestyle='--', label='Strike')
+        ax.set_title("Payoff d'un Call")
+        ax.set_xlabel("Prix du sous-jacent")
+        ax.set_ylabel("Payoff à maturité")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class Put(ProduitFinancier, HestonOptionMixin):
     def __init__(self, sous_jacent: Action, maturite: float, parametres: list,
@@ -106,17 +112,23 @@ class Put(ProduitFinancier, HestonOptionMixin):
             seed=self.mc_config.seed
         )
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.strike, 1.5 * self.strike, 100)
         payoff = np.maximum(-S_range + self.strike, 0)
-        plt.plot(S_range, payoff, label="Call Payoff")
-        plt.axvline(self.strike, color='gray', linestyle='--', label='Strike')
-        plt.title("Payoff d'un PUT")
-        plt.xlabel("Prix du sous-jacent")
-        plt.ylabel("Payoff à maturité")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Put Payoff")
+        ax.axvline(self.strike, color='gray', linestyle='--', label='Strike')
+        ax.set_title("Payoff d'un Put")
+        ax.set_xlabel("Prix du sous-jacent")
+        ax.set_ylabel("Payoff à maturité")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 
 
@@ -143,23 +155,25 @@ class CallSpread(StrategieOption):
                                          rho, theta, k, eta, v0, self.mc_config.Nmc, self.mc_config.N, self.mc_config.seed)
         return call1 - call2
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         K1, K2 = self.strikes
         S_range = np.linspace(0.5 * K1, 1.5 * K2, 200)
         payoff = np.maximum(S_range - K1, 0) - np.maximum(S_range - K2, 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Call Spread Payoff", color='blue')
-        plt.axvline(K1, color='green', linestyle='--', label=f'Strike Bas (K1 = {K1})')
-        plt.axvline(K2, color='red', linestyle='--', label=f'Strike Haut (K2 = {K2})')
-        plt.title("Payoff d'un Call Spread à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
 
+        ax.plot(S_range, payoff, label="Call Spread Payoff", color='blue')
+        ax.axvline(K1, color='green', linestyle='--', label=f'Strike Bas (K1 = {K1})')
+        ax.axvline(K2, color='red', linestyle='--', label=f'Strike Haut (K2 = {K2})')
+        ax.set_title("Payoff d'un Call Spread à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class Straddle(StrategieOption):
     def price(self):
@@ -171,20 +185,25 @@ class Straddle(StrategieOption):
                                       rho, theta, k, eta, v0, self.mc_config.Nmc, self.mc_config.N, self.mc_config.seed)
         return call + put
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         K = self.strikes[0]
         S_range = np.linspace(0.5 * K, 1.5 * K, 200)
         payoff = np.maximum(S_range - K, 0) + np.maximum(K - S_range, 0)
 
-        plt.plot(S_range, payoff, label="Straddle Payoff", color='blue')
-        plt.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
-        plt.title("Payoff d'un Straddle à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Straddle Payoff", color='blue')
+        ax.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
+        ax.set_title("Payoff d'un Straddle à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
+
 
 class Strangle(StrategieOption):
     def price(self):
@@ -196,21 +215,25 @@ class Strangle(StrategieOption):
                                       rho, theta, k, eta, v0, self.mc_config.Nmc, self.mc_config.N, self.mc_config.seed)
         return call + put
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         K1, K2 = self.strikes
         S_range = np.linspace(0.5 * K2, 1.5 * K1, 200)
         payoff = np.maximum(S_range - K1, 0) + np.maximum(K2 - S_range, 0)
 
-        plt.plot(S_range, payoff, label="Strangle Payoff", color='darkorange')
-        plt.axvline(K1, color='green', linestyle='--', label=f'Strike Call (K1 = {K1})')
-        plt.axvline(K2, color='red', linestyle='--', label=f'Strike Put (K2 = {K2})')
-        plt.title("Payoff d'un Strangle à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Strangle Payoff", color='darkorange')
+        ax.axvline(K1, color='green', linestyle='--', label=f'Strike Call (K1 = {K1})')
+        ax.axvline(K2, color='red', linestyle='--', label=f'Strike Put (K2 = {K2})')
+        ax.set_title("Payoff d'un Strangle à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 
 class Strip(StrategieOption):
@@ -223,20 +246,25 @@ class Strip(StrategieOption):
                                       rho, theta, k, eta, v0, self.mc_config.Nmc, self.mc_config.N, self.mc_config.seed)
         return call + 2 * put
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         K = self.strikes[0]
         S_range = np.linspace(0.5 * K, 1.5 * K, 200)
         payoff = np.maximum(S_range - K, 0) + 2 * np.maximum(K - S_range, 0)
 
-        plt.plot(S_range, payoff, label="Strip Payoff", color='purple')
-        plt.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
-        plt.title("Payoff d'un Strip à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Strip Payoff", color='purple')
+        ax.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
+        ax.set_title("Payoff d'un Strip à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
+
 
 class Strap(StrategieOption):
     def price(self):
@@ -248,20 +276,24 @@ class Strap(StrategieOption):
                                       rho, theta, k, eta, v0, self.mc_config.Nmc, self.mc_config.N, self.mc_config.seed)
         return 2 * call + put
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         K = self.strikes[0]
         S_range = np.linspace(0.5 * K, 1.5 * K, 200)
         payoff = 2 * np.maximum(S_range - K, 0) + np.maximum(K - S_range, 0)
 
-        plt.plot(S_range, payoff, label="Strap Payoff", color='teal')
-        plt.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
-        plt.title("Payoff d'un Strap à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Strap Payoff", color='teal')
+        ax.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
+        ax.set_title("Payoff d'un Strap à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class OptionCallBinaire(StrategieOption):
     def __init__(self, sous_jacent, maturite, parametres, r, strike, h1, mc_config=None):
@@ -280,26 +312,28 @@ class OptionCallBinaire(StrategieOption):
         prix = (call1 - call2)/self.h1
         return prix
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         K = self.strikes[0]
-        self.h1 = (0.5 / 100) * self.sous_jacent.S0  # Réaffectation comme dans le pricing
+        self.h1 = (0.5 / 100) * self.sous_jacent.S0
         S_range = np.linspace(0.8 * K, 1.2 * K, 500)
-
-        # Approximation du delta par une dérivée numérique (binaire ≈ dérivée du call)
         payoff = np.where((S_range >= K) & (S_range <= K + self.h1), 1 / self.h1, 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Option Call Binaire (approximation)")
-        plt.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
-        plt.axvline(K + self.h1, color='red', linestyle='--', label=f'K + h1 (h1 = {self.h1:.2f})')
-        plt.title("Payoff d'une Option Call Binaire à maturité (approximation dérivée)")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff")
-        plt.ylim(-0.1, 1.5 / self.h1)
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Option Call Binaire (approximation)")
+        ax.axvline(K, color='gray', linestyle='--', label=f'Strike (K = {K})')
+        ax.axvline(K + self.h1, color='red', linestyle='--', label=f'K + h1 (h1 = {self.h1:.2f})')
+        ax.set_title("Payoff d'une Option Call Binaire à maturité (approximation dérivée)")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff")
+        ax.set_ylim(-0.1, 1.5 / self.h1)
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
+
 
 class Autocall(ProduitFinancier, HestonOptionMixin):
     def __init__(self, sous_jacent: Action, maturite:float, parametres: list, r: float,
@@ -375,25 +409,28 @@ class OptionBarriereUpAndIn_CALL(ProduitFinancier,HestonOptionMixin):
         price = np.mean(discounted_payoffs)
         return price, prob_activation
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.barriere, 1.5 * self.barriere, 300)
         payoff = np.where(S_range >= self.barriere, np.maximum(S_range - self.strike, 0), 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Up-and-In Call Payoff", color='blue')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
-        plt.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Up-and-In Call Payoff", color='blue')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
+        ax.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
         _, prob_activation = self.price()
-        plt.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
-                 transform=plt.gca().transAxes,
-                 fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
-        plt.title("Payoff d'une Option Up-and-In Call à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        ax.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
+                transform=ax.transAxes,
+                fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.set_title("Payoff d'une Option Up-and-In Call à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class OptionBarriereUpAndOutCall(ProduitFinancier, HestonOptionMixin):
     """Option barrière Up-and-Out Call utilisant le modèle de Heston.
@@ -455,25 +492,28 @@ class OptionBarriereUpAndOutCall(ProduitFinancier, HestonOptionMixin):
 
         return np.mean(discounted_payoffs), prob_desactivation
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.barriere, 1.5 * self.barriere, 300)
         payoff = np.where(S_range < self.barriere, np.maximum(S_range - self.strike, 0), 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Up-and-Out Call Payoff", color='red')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
-        plt.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Up-and-Out Call Payoff", color='red')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
+        ax.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
         _, prob_activation = self.price()
-        plt.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
-                 transform=plt.gca().transAxes,
-                 fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
-        plt.title("Payoff d'une Option Up-and-Out Call à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        ax.text(0.35, 0.95, f"Proba désactivation: {prob_activation:.2%}",
+                transform=ax.transAxes,
+                fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.set_title("Payoff d'une Option Up-and-Out Call à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class OptionBarriereDownAndOutCall(ProduitFinancier, HestonOptionMixin):
     """Option barrière Down-and-Out Call. Désactivée si le sous-jacent tombe sous la barrière."""
@@ -503,25 +543,29 @@ class OptionBarriereDownAndOutCall(ProduitFinancier, HestonOptionMixin):
 
         return np.mean(discounted), prob_desactivation
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.strike, 1.5 * self.strike, 300)
         payoff = np.where(S_range > self.barriere, np.maximum(S_range - self.strike, 0), 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Down-and-Out Call Payoff", color='green')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
-        plt.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Down-and-Out Call Payoff", color='green')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
+        ax.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
         _, prob_activation = self.price()
-        plt.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
-                 transform=plt.gca().transAxes,
-                 fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
-        plt.title("Payoff d'une Option Down-and-Out Call à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        ax.text(0.35, 0.95, f"Proba désactivation: {prob_activation:.2%}",
+                transform=ax.transAxes,
+                fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.set_title("Payoff d'une Option Down-and-Out Call à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
+
 
 class OptionBarriereUpAndInPut(ProduitFinancier, HestonOptionMixin):
     """Option barrière Up-and-In Put. Activée seulement si le sous-jacent dépasse la barrière."""
@@ -550,25 +594,28 @@ class OptionBarriereUpAndInPut(ProduitFinancier, HestonOptionMixin):
 
         return np.mean(discounted), prob_activation
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.barriere, 1.5 * self.barriere, 300)
         payoff = np.where(S_range >= self.barriere, np.maximum(self.strike - S_range, 0), 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Up-and-In Put Payoff", color='orange')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
-        plt.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Up-and-In Put Payoff", color='orange')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
+        ax.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
         _, prob_activation = self.price()
-        plt.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
-                 transform=plt.gca().transAxes,
-                 fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
-        plt.title("Payoff d'une Option Up-and-In Put à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        ax.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
+                transform=ax.transAxes,
+                fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.set_title("Payoff d'une Option Up-and-In Put à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class OptionBarriereUpAndOutPut(ProduitFinancier, HestonOptionMixin):
     """Option barrière Up-and-Out Put. Désactivée si le sous-jacent dépasse la barrière."""
@@ -597,25 +644,28 @@ class OptionBarriereUpAndOutPut(ProduitFinancier, HestonOptionMixin):
 
         return np.mean(discounted), prob_desactivation
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.barriere, 1.5 * self.barriere, 300)
         payoff = np.where(S_range < self.barriere, np.maximum(self.strike - S_range, 0), 0)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Up-and-Out Put Payoff", color='teal')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
-        plt.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Up-and-Out Put Payoff", color='teal')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
+        ax.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
         _, prob_activation = self.price()
-        plt.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
-                 transform=plt.gca().transAxes,
-                 fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
-        plt.title("Payoff d'une Option Up-and-Out Put à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        ax.text(0.35, 0.95, f"Proba désactivation: {prob_activation:.2%}",
+                transform=ax.transAxes,
+                fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.set_title("Payoff d'une Option Up-and-Out Put à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class NoteCapitalProtegee(ProduitFinancier, HestonOptionMixin):
     def __init__(self, sous_jacent: Action, maturite, parametres, r,
@@ -664,25 +714,34 @@ class NoteCapitalProtegee(ProduitFinancier, HestonOptionMixin):
 
         return price_zc + call - call_ko + rebate_discounted
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.strike, 1.5 * self.barriere, 300)
         payoff_call = np.maximum(S_range - self.strike, 0) * (self.nominal / self.sous_jacent.S0)
-
-        # Knock-out logique
         payoff = np.where(S_range < self.barriere, self.nominal + payoff_call, self.nominal + self.rebate)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Payoff Note Capital Protégée", color='blue')
-        plt.axhline(self.nominal, color='gray', linestyle='--', label=f'Capital Protégé ({self.nominal}€)')
-        plt.axvline(self.strike, color='green', linestyle='--', label=f'Strike (K={self.strike})')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière KO (H={self.barriere})')
-        plt.title("Payoff d'une Note à Capital Protégé à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
+
+        ax.plot(S_range, payoff, label="Payoff Note Capital Protégée", color='blue')
+        ax.axhline(self.nominal, color='gray', linestyle='--', label=f'Capital Protégé ({self.nominal}€)')
+        ax.axvline(self.strike, color='green', linestyle='--', label=f'Strike (K={self.strike})')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière KO (H={self.barriere})')
+
+        # Ajout d'informations sur le rebate
+        if self.rebate > 0:
+            ax.axhline(self.nominal + self.rebate, color='red', linestyle=':',
+                       label=f'Rebate ({self.rebate:.2f}€)')
+            ax.text(0.7, 0.85, f"Rebate: {self.rebate:.2f}€",
+                    transform=ax.transAxes, color='red')
+
+        ax.set_title("Payoff d'une Note à Capital Protégé à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 class ReverseConvertible(ProduitFinancier, HestonOptionMixin):
     def __init__(self, sous_jacent: Action, maturite:float, parametres: list, r: float,
@@ -711,34 +770,32 @@ class ReverseConvertible(ProduitFinancier, HestonOptionMixin):
 
         return reverse_price
 
-    def plot_payoff(self):
+    def plot_payoff(self, ax=None):
         S0 = self.sous_jacent.S0
         K_barrier = self.protection_barrier * S0
         coupon = self.coupon_rate * self.nominal
-
         S_range = np.linspace(0.5 * K_barrier, 1.5 * S0, 300)
-
-        # Payoff : nominal + coupon si barrière non franchie
-        # sinon : remise en actions + coupon
         payoff = np.where(
             S_range >= K_barrier,
             self.nominal + coupon,
             S_range * (self.nominal / S0) + coupon
         )
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Reverse Convertible Payoff", color='navy', linewidth=2)
-        plt.axvline(K_barrier, linestyle='--', color='purple', label=f'Barrière (H = {K_barrier:.2f})')
-        plt.axhline(self.nominal + coupon, linestyle='--', color='gray',
-                    label=f'Nominal + Coupon ({self.nominal + coupon:.0f}€)')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
 
-        plt.title("Payoff d'un Reverse Convertible à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        ax.plot(S_range, payoff, label="Reverse Convertible Payoff", color='navy', linewidth=2)
+        ax.axvline(K_barrier, linestyle='--', color='purple', label=f'Barrière (H = {K_barrier:.2f})')
+        ax.axhline(self.nominal + coupon, linestyle='--', color='gray',
+                   label=f'Nominal + Coupon ({self.nominal + coupon:.0f}€)')
+        ax.set_title("Payoff d'un Reverse Convertible à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
+
+        if ax is None:
+            st.pyplot(fig)
 
 
 class OptionBarriereDownAndInCall(ProduitFinancier, HestonOptionMixin):
@@ -790,30 +847,29 @@ class OptionBarriereDownAndInCall(ProduitFinancier, HestonOptionMixin):
 
         return price, prob_activation
 
-    def plot_payoff(self):
-        # On trace dans une zone centrée autour de la barrière (vers le bas)
+    def plot_payoff(self, ax=None):
         S_range = np.linspace(0.5 * self.barriere, 1.5 * self.strike, 300)
-        payoff = np.maximum(S_range - self.strike, 0)  # Vanilla call payoff
-        # Visually limit to when barrier has been hit (even though S_T can be anywhere)
+        payoff = np.maximum(S_range - self.strike, 0)
         payoff = np.where(S_range >= self.strike, payoff, payoff)
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(S_range, payoff, label="Down-and-In Call Payoff", color='darkgreen')
-        plt.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
-        plt.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 6))
 
+        ax.plot(S_range, payoff, label="Down-and-In Call Payoff", color='darkgreen')
+        ax.axvline(self.barriere, color='purple', linestyle='--', label=f'Barrière (H={self.barriere})')
+        ax.axvline(self.strike, color='gray', linestyle='--', label=f'Strike (K={self.strike})')
         _, prob_activation = self.price()
-        plt.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
-                 transform=plt.gca().transAxes,
-                 fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.text(0.35, 0.95, f"Proba activation: {prob_activation:.2%}",
+                transform=ax.transAxes,
+                fontsize=12, color='black', bbox=dict(boxstyle="round", facecolor="white", edgecolor="gray"))
+        ax.set_title("Payoff d'une Option Down-and-In Call à maturité")
+        ax.set_xlabel("Prix du sous-jacent $S_T$")
+        ax.set_ylabel("Payoff (€)")
+        ax.grid(True)
+        ax.legend()
 
-        plt.title("Payoff d'une Option Down-and-In Call à maturité")
-        plt.xlabel("Prix du sous-jacent $S_T$")
-        plt.ylabel("Payoff (€)")
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+        if ax is None:
+            st.pyplot(fig)
 
 
 
